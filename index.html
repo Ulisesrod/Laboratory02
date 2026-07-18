@@ -10,6 +10,22 @@
 </head>
 
 <body>
+    <section class="selector-panel" aria-label="Selección de equipo">
+        <div class="selector-group">
+            <label for="teamSelect">Selecciona un equipo</label>
+            <select id="teamSelect" disabled aria-live="polite">
+                <option value="">— Cargando equipos…</option>
+            </select>
+        </div>
+    </section>
+    <section class="section-container" aria-label="Seccion de partidos">
+        <h2 id="partidosJugados"> Partidos Jugados</h2>
+        <div class="card-wrapper">
+            <div id="juegos" class="card" aria-label="tarjeta de juego">
+                <h3 class="card-title">Partido</h3>
+            </div>
+        </div>
+    </section>
 
 </body>
 

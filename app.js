@@ -6,90 +6,212 @@
 const BASE = "http://worldcup26.ir";
 
 /* ──────────────────────────────────────────────────────
-   GET /get/teams, GET /get/games, GET /get/stadiums. GET /get/groups
+   ESTADOS
 ────────────────────────────────────────────────────── */
 const stateT = {
-  teams: [],            // Array<{id, name, flag_url, ...}>
-  //
+    teams: []
 };
+
 const stateG = {
-  games: [],            // Array<{id, name, flag_url, ...}>
-  //
+    games: []
 };
+
 const stateS = {
-  stadiums: [],            // Array<{id, name, flag_url, ...}>
-  //
+    stadiums: []
 };
+
 const stateGr = {
-  groups: [],            // Array<{id, name, flag_url, ...}>
-  //
+    groups: []
 };
 
 /* ──────────────────────────────────────────────────────
    SELECTORES DOM
 ────────────────────────────────────────────────────── */
-
-/*
 const teamSelect = document.getElementById("teamSelect");
-const teamInfo = document.getElementById("teamInfo");
-const cardsGrid = document.getElementById("cardsGrid");
-const statsBar = document.getElementById("statsBar");
-const sectionEyebrow = document.getElementById("sectionEyebrow");
-const citiesSection = document.getElementById("citiesSection");
-const apiStatus = document.getElementById("apiStatus");
-const teamGroup = document.getElementById("teamGroup");*/
-
+const gameSelect = document.getElementById("juegos");
 
 /* ──────────────────────────────────────────────────────
-   Init: carga inicial de los tres endpoints
+   CARGA DE DATOS
 ────────────────────────────────────────────────────── */
+async function init(urlGet, state, property) {
 
+    try {
 
-async function init(urlGet, state, data) {
+        const response = await fetch(`${BASE}${urlGet}`);
 
-  await fetch(`${BASE}${urlGet}`)
-    .then(response => response.json())
-    .then(jsondata => {
-      // guardo los datos de equipos en el estado global
-      state[data] = jsondata[data];
-      // Llamar a las funciones de carga
+        if (!response.ok) {
+            throw new Error(`Error HTTP ${response.status}`);
+        }
 
-      //populateTeamGroup();
-      //example cargaRequest1();
-    })
-    .catch(err => {
-      console.error("Error al cargar equipos:", err);
-    });
+        const json = await response.json();
+
+        state[property] = json[property];
+
+    } catch (error) {
+
+        console.error(`Error cargando ${property}:`, error);
+
+    }
+
 }
-init("/get/teams", stateT, "teams");
-init("/get/games", stateG, "games");
-init("/get/stadiums", stateS, "stadiums");
-init("/get/groups", stateGr, "groups");
 
-console.log(stateT.teams)
+/* ──────────────────────────────────────────────────────
+   CARGA INICIAL
+────────────────────────────────────────────────────── */
+async function start() {
+
+    teamSelect.disabled = true;
+    gameSelect.disabled = true;
+
+    await Promise.all([
+        init("/get/teams", stateT, "teams"),
+        init("/get/games", stateG, "games"),
+        init("/get/stadiums", stateS, "stadiums"),
+        init("/get/groups", stateGr, "groups")
+    ]);
+
+    populateTeamSelector();
+
+    addEventToTeamSelect();
+
+    teamSelect.disabled = false;
+
+}
+
+start();
+
+/* ──────────────────────────────────────────────────────
+   LLENA EL SELECT DE EQUIPOS
+────────────────────────────────────────────────────── */
+function populateTeamSelector() {
+
+    const sortedTeamList = [...stateT.teams].sort((a, b) =>
+        (a.name_en ?? "").localeCompare(b.name_en ?? "")
+    );
+
+    teamSelect.innerHTML =
+        `<option value="">— Selecciona un equipo (${sortedTeamList.length}) —</option>`;
+
+    sortedTeamList.forEach(team => {
+
+        const option = document.createElement("option");
+
+        option.value = team.id;
+        option.textContent = team.name_en;
+
+        teamSelect.appendChild(option);
+
+    });
+
+}
+
+/* ──────────────────────────────────────────────────────
+   EVENTO DEL SELECT DE EQUIPOS
+────────────────────────────────────────────────────── */
+function addEventToTeamSelect() {
+
+    teamSelect.addEventListener("change", onTeamChange);
+
+}
+
+/* ──────────────────────────────────────────────────────
+   CAMBIO DE EQUIPO
+────────────────────────────────────────────────────── */
+function onTeamChange() {
+
+    const tid = Number(teamSelect.value);
+
+    // Limpiar tarjetas anteriores
+    juegos.innerHTML = "";
+
+    if (!tid) {
+        juegos.innerHTML = `
+            <h3 class="card-title">Partido</h3>
+            <p>Seleccione un equipo.</p>
+        `;
+        return;
+    }
+
+    const sortedGameList = [...stateG.games].sort((a, b) =>
+        (a.local_date ?? "").localeCompare(b.local_date ?? "")
+    );
+
+    sortedGameList.forEach(game => {
+
+        const homeId = Number(game.home_team_id);
+        const awayId = Number(game.away_team_id);
+
+        if (homeId === tid || awayId === tid) {
+            const stadiumId = Number(game.stadium_id);
+            const card = document.createElement("article");
+            card.classList.add("card");
+
+            stateS.stadiums.forEach(stadiums => {
+                const stadId = Number(stadiums.id);
+
+                if (stadiumId === stadId) {
+                    card.innerHTML = `
+                <h3 class="card-title">
+                    ${game.home_team_name_en} vs ${game.away_team_name_en}
+                </h3>
+                <p><strong>Fecha:</strong> ${game.local_date}</p>
+                <p><strong>Estadio:</strong>${stadiums.fifa_name}</p>
+                <p><strong>Ciudad:</strong> ${stadiums.city_en ?? "No disponible"}</p>
+                <p><strong>Pais:</strong>${stadiums.country_en ?? "No disponible2"}</p>
+                <p><strong>Aforo:</strong>${stadiums.capacity ?? "No disponible3"} </p>
+                <p><strong>Resultado:</strong>
+                    ${game.home_score ?? 0} - ${game.away_score ?? 0}
+                </p>
+            `;
+
+                    juegos.appendChild(card);
+                }
+            })
+        }
+
+    });
+
+    // Si el equipo aún no tiene partidos
+    if (juegos.children.length === 0) {
+
+        juegos.innerHTML = `
+            <article class="card">
+                <h3 class="card-title">Sin partidos</h3>
+                <p>Este equipo no tiene partidos registrados.</p>
+            </article>
+        `;
+
+    }
+
+}
+
+
+
+
+
 
 /*Carga los equipos por grupo junto a su ID, nombre y bandera. Los agrega a una lista de grupos */
 
 function populateTeamGroup() {
 
-  const array = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"];
-  for (const group of array) {
-    const miLista = document.createElement('ul');
-    miLista.textContent = `Grupo ${group}`;
+    const array = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"];
+    for (const group of array) {
+        const miLista = document.createElement('ul');
+        miLista.textContent = `Grupo ${group}`;
 
-    stateT.teams.forEach(team => {
-      if (String(team.groups) === group) {
-        const miElemento = document.createElement('li');
-        miElemento.textContent = `${team.id} ${team.name_en} `;
-        const bandera = document.createElement("img");
-        bandera.src = team.flag;
-        bandera.alt = `${team.name_en} flag`;
-        miElemento.appendChild(bandera);
-        miLista.appendChild(miElemento);
-        console.log(miLista);
-      }
+        stateT.teams.forEach(team => {
+            if (String(team.groups) === group) {
+                const miElemento = document.createElement('li');
+                miElemento.textContent = `${team.id} ${team.name_en} `;
+                const bandera = document.createElement("img");
+                bandera.src = team.flag;
+                bandera.alt = `${team.name_en} flag`;
+                miElemento.appendChild(bandera);
+                miLista.appendChild(miElemento);
+                console.log(miLista);
+            }
 
-    });
-    teamGroup.appendChild(miLista);
-  }
+        });
+        teamGroup.appendChild(miLista);
+    }
 }
