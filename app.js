@@ -69,63 +69,12 @@ async function showCountdown(seconds) {
 
         box.textContent =
             `Demasiadas solicitudes. Reintentando en ${i} segundos...`;
-
         await sleep(1000);
-
     }
 
     box.remove();
 
 }
-
-/* Sesión expirada */
-
-function showSessionExpired() {
-
-    localStorage.removeItem("token");
-
-    let modal = document.getElementById("sessionExpired");
-
-    if (modal) return;
-
-    modal = document.createElement("div");
-
-    modal.id = "sessionExpired";
-
-    modal.innerHTML = `
-        <div style="
-            position:fixed;
-            inset:0;
-            background:rgba(0,0,0,.6);
-            display:flex;
-            justify-content:center;
-            align-items:center;
-            z-index:9999;
-        ">
-            <div style="
-                background:white;
-                padding:30px;
-                border-radius:8px;
-                text-align:center;
-            ">
-                <h2>Sesión expirada</h2>
-            </div>
-        </div>
-    `;
-
-    document.body.appendChild(modal);
-
-    document
-        .getElementById("loginAgain")
-        .addEventListener("click", () => {
-
-            window.location.href = "/login.html";
-
-        });
-
-}
-
-
 
 /* ──────────────────────────────────────────────────────
    CONFIGURACIÓN
@@ -180,25 +129,15 @@ async function fetchTry(urlGet) {
     const token = localStorage.getItem("token");
 
     for (let attempt = 0; attempt <= 4; attempt++) {
-
         try {
 
             const response = await fetch(`${BASE}${urlGet}`);
-
-            if (response.status === 401) {
-
-                showSessionExpired();
-
-                throw new Error("401");
-
-            }
-
             if (
                 response.status === 500 ||
                 response.status === 429
             ) {
 
-                if (attempt === MAX_RETRIES) {
+                if (attempt === 4) {
 
                     throw new Error(
                         `HTTP ${response.status}`
@@ -244,7 +183,7 @@ async function fetchTry(urlGet) {
         } catch (error) {
 
             const cached = localStorage.getItem(
-                cacheKey(url)
+                cacheKey(urlGet)
             );
 
             if (cached) {
@@ -274,9 +213,10 @@ async function start() {
 
     await Promise.all([
         init("/get/teams", stateT, "teams"),
-        //    init("/get/games", stateG, "games"),
-        //   init("/get/stadiums", stateS, "stadiums"),
-        //   init("/get/groups", stateGr, "groups")
+        init("/get/games", stateG, "games"),
+        init("/get/stadiums", stateS, "stadiums"),
+        init("/get/groups", stateGr, "groups"),
+
     ]);
 
     populateTeamSelector();
@@ -329,12 +269,8 @@ function addEventToTeamSelect() {
 function onTeamChange() {
 
     const tid = Number(teamSelect.value);
-
-    init("/get/games", stateG, "games");
-    init("/get/stadiums", stateS, "stadiums");
-
-        // Limpiar tarjetas anteriores
-        juegos.innerHTML = "";
+    // Limpiar tarjetas anteriores
+    juegos.innerHTML = "";
 
     if (!tid) {
         juegos.innerHTML = `
