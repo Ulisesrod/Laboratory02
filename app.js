@@ -1,6 +1,133 @@
 "use strict";
 
 /* ──────────────────────────────────────────────────────
+   UTILIDADES
+────────────────────────────────────────────────────── */
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function cacheKey(url) {
+    return `cache:${url}`;
+}
+
+/* Indicador de datos cacheados */
+function showOfflineBanner() {
+
+    let banner = document.getElementById("offlineBanner");
+
+    if (!banner) {
+
+        banner = document.createElement("div");
+        banner.id = "offlineBanner";
+
+        banner.style.background = "#ffcc00";
+        banner.style.color = "#000";
+        banner.style.padding = "12px";
+        banner.style.fontWeight = "bold";
+        banner.style.textAlign = "center";
+        document.body.prepend(banner);
+
+    }
+
+    banner.textContent =
+        "Mostrando datos almacenados (pueden estar desactualizados).";
+
+}
+
+function hideOfflineBanner() {
+
+    const banner = document.getElementById("offlineBanner");
+
+    if (banner) banner.remove();
+
+}
+
+/* Countdown para 429 */
+
+async function showCountdown(seconds) {
+
+    let box = document.getElementById("retryCountdown");
+
+    if (!box) {
+
+        box = document.createElement("div");
+
+        box.id = "retryCountdown";
+
+        box.style.background = "#ff9800";
+        box.style.color = "white";
+        box.style.padding = "12px";
+        box.style.textAlign = "center";
+
+        document.body.prepend(box);
+
+    }
+
+    for (let i = seconds; i > 0; i--) {
+
+        box.textContent =
+            `Demasiadas solicitudes. Reintentando en ${i} segundos...`;
+
+        await sleep(1000);
+
+    }
+
+    box.remove();
+
+}
+
+/* Sesión expirada */
+
+function showSessionExpired() {
+
+    localStorage.removeItem("token");
+
+    let modal = document.getElementById("sessionExpired");
+
+    if (modal) return;
+
+    modal = document.createElement("div");
+
+    modal.id = "sessionExpired";
+
+    modal.innerHTML = `
+        <div style="
+            position:fixed;
+            inset:0;
+            background:rgba(0,0,0,.6);
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            z-index:9999;
+        ">
+            <div style="
+                background:white;
+                padding:30px;
+                border-radius:8px;
+                text-align:center;
+            ">
+                <h2>Sesión expirada</h2>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    document
+        .getElementById("loginAgain")
+        .addEventListener("click", () => {
+
+            window.location.href = "/login.html";
+
+        });
+
+}
+
+
+
+/* ──────────────────────────────────────────────────────
    CONFIGURACIÓN
 ────────────────────────────────────────────────────── */
 const BASE = "http://worldcup26.ir";
@@ -37,21 +164,103 @@ async function init(urlGet, state, property) {
 
     try {
 
-        const response = await fetch(`${BASE}${urlGet}`);
-
-        if (!response.ok) {
-            throw new Error(`Error HTTP ${response.status}`);
-        }
-
-        const json = await response.json();
+        const json = await fetchTry(urlGet);
 
         state[property] = json[property];
 
     } catch (error) {
 
-        console.error(`Error cargando ${property}:`, error);
+        console.error(error);
 
     }
+
+}
+
+async function fetchTry(urlGet) {
+    const token = localStorage.getItem("token");
+
+    for (let attempt = 0; attempt <= 4; attempt++) {
+
+        try {
+
+            const response = await fetch(`${BASE}${urlGet}`);
+
+            if (response.status === 401) {
+
+                showSessionExpired();
+
+                throw new Error("401");
+
+            }
+
+            if (
+                response.status === 500 ||
+                response.status === 429
+            ) {
+
+                if (attempt === MAX_RETRIES) {
+
+                    throw new Error(
+                        `HTTP ${response.status}`
+                    );
+
+                }
+
+                const delay = Math.pow(2, attempt);
+
+                if (response.status === 429) {
+
+                    await showCountdown(delay);
+
+                } else {
+
+                    await sleep(delay * 1000);
+
+                }
+
+                continue;
+
+            }
+
+            if (!response.ok) {
+
+                throw new Error(
+                    `HTTP ${response.status}`
+                );
+
+            }
+
+            const json = await response.json();
+
+            localStorage.setItem(
+                cacheKey(urlGet),
+                JSON.stringify(json)
+            );
+
+            hideOfflineBanner();
+
+            return json;
+
+        } catch (error) {
+
+            const cached = localStorage.getItem(
+                cacheKey(url)
+            );
+
+            if (cached) {
+
+                showOfflineBanner();
+
+                return JSON.parse(cached);
+
+            }
+
+            throw error;
+
+        }
+
+    }
+
 
 }
 
@@ -65,9 +274,9 @@ async function start() {
 
     await Promise.all([
         init("/get/teams", stateT, "teams"),
-        init("/get/games", stateG, "games"),
-        init("/get/stadiums", stateS, "stadiums"),
-        init("/get/groups", stateGr, "groups")
+        //    init("/get/games", stateG, "games"),
+        //   init("/get/stadiums", stateS, "stadiums"),
+        //   init("/get/groups", stateGr, "groups")
     ]);
 
     populateTeamSelector();
@@ -121,8 +330,11 @@ function onTeamChange() {
 
     const tid = Number(teamSelect.value);
 
-    // Limpiar tarjetas anteriores
-    juegos.innerHTML = "";
+    init("/get/games", stateG, "games");
+    init("/get/stadiums", stateS, "stadiums");
+
+        // Limpiar tarjetas anteriores
+        juegos.innerHTML = "";
 
     if (!tid) {
         juegos.innerHTML = `
@@ -184,10 +396,6 @@ function onTeamChange() {
     }
 
 }
-
-
-
-
 
 
 /*Carga los equipos por grupo junto a su ID, nombre y bandera. Los agrega a una lista de grupos */
