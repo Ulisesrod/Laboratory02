@@ -105,6 +105,10 @@ const stateGr = {
 ────────────────────────────────────────────────────── */
 const teamSelect = document.getElementById("teamSelect");
 const gameSelect = document.getElementById("juegos");
+const goleadas = document.getElementById("goleadas");
+const btnGoleadas = document.getElementById("btnGoleadas");
+const elMuro = document.getElementById("elmuro");
+const btnelmuro = document.getElementById("btnelmuro");
 
 /* ──────────────────────────────────────────────────────
    CARGA DE DATOS
@@ -333,29 +337,200 @@ function onTeamChange() {
 
 }
 
+/* ──────────────────────────────────────────────────────
+   MOSTRAR GOLEADAS
+────────────────────────────────────────────────────── */
+function show_goleadas() {
 
-/*Carga los equipos por grupo junto a su ID, nombre y bandera. Los agrega a una lista de grupos */
+    goleadas.innerHTML = "";
 
-function populateTeamGroup() {
+    // Mapa para encontrar equipos rápidamente por id
+    const teamsMap = new Map();
 
-    const array = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"];
-    for (const group of array) {
-        const miLista = document.createElement('ul');
-        miLista.textContent = `Grupo ${group}`;
+    stateT.teams.forEach(team => {
+        teamsMap.set(Number(team.id), team);
+    });
 
-        stateT.teams.forEach(team => {
-            if (String(team.groups) === group) {
-                const miElemento = document.createElement('li');
-                miElemento.textContent = `${team.id} ${team.name_en} `;
-                const bandera = document.createElement("img");
-                bandera.src = team.flag;
-                bandera.alt = `${team.name_en} flag`;
-                miElemento.appendChild(bandera);
-                miLista.appendChild(miElemento);
-                console.log(miLista);
-            }
+    console.log(teamsMap);
+    const partidos_goleados = [];
+
+    stateG.games.forEach(game => {
+
+        const homescore = Number(game.home_score);
+        const awayscore = Number(game.away_score);
+        const difference = Math.abs(homescore - awayscore);
+        if (difference >= 3) {
+            partidos_goleados.push({game, diferencia: difference});
+        }
+        
+    })
+    console.log(partidos_goleados);
+
+    // Cabecera
+    const title = document.createElement("h2");
+    title.textContent = `Goleadas encontradas: ${partidos_goleados.length}`;
+    goleadas.appendChild(title);
+
+    if (partidos_goleados.length === 0) {
+
+        goleadas.innerHTML += `
+            <article class="card">
+                <h3>No hay goleadas registradas.</h3>
+            </article>
+        `;
+        return;
+    }
+
+    partidos_goleados.sort((a, b) => a.diferencia - b.diferencia);
+
+    // Cards
+    partidos_goleados.forEach(game => {
+
+        const home = teamsMap.get(Number(game.game.home_team_id));
+        const away = teamsMap.get(Number(game.game.away_team_id));
+
+        const card = document.createElement("article");
+        card.classList.add("card");
+
+        card.innerHTML = `
+            <h3 class="card-title">
+                <img src="${home?.flag || ""}"
+                     width="30"
+                     alt="${home?.name_en}">
+                ${home?.name_en ?? "Equipo"}
+
+                vs
+
+                <img src="${away?.flag || ""}"
+                     width="30"
+                     alt="${away?.name_en}">
+                ${away?.name_en ?? "Equipo"}
+            </h3>
+
+            <p>
+                <strong>Resultado:</strong>
+                ${game.game.home_score} - ${game.game.away_score}
+            </p>
+
+            <p>
+                <strong>Diferencia:</strong>
+                ${game.diferencia} goles
+            </p>
+
+            <p>
+                <strong>Fecha:</strong>
+                ${game.game.local_date}
+            </p>
+        `;
+
+        goleadas.appendChild(card);
+
+    });
+
+}
+
+btnGoleadas.addEventListener("click", show_goleadas);
+
+/* ──────────────────────────────────────────────────────
+   El muro
+────────────────────────────────────────────────────── */
+function elmuro() {
+
+    elMuro.innerHTML = "";
+
+    // Mapear equipos para búsquedas rápidas, obtenemos el id del equipo y el objeto del mismo con toda su informacion
+    const teamsMap = new Map();
+
+    stateT.teams.forEach(team => {
+        teamsMap.set(Number(team.id), team);
+    });
+
+    // Obtener el team ID y el GA de la tabla de grupos
+    const allTeams = [];
+
+    stateGr.groups.forEach(group => {
+
+        group.teams.forEach(team => {
+
+            allTeams.push({
+                team_id: Number(team.team_id),
+                ga: Number(team.ga)
+            });
 
         });
-        teamGroup.appendChild(miLista);
-    }
+
+    });
+
+    // Ordenar por goles en contra
+    allTeams.sort((a, b) => a.ga - b.ga);
+
+    // Top 5, hacemos una variable con solo los primeros 5 lugares.
+    const top5 = allTeams.slice(0, 5);
+
+    // Cabecera
+    const title = document.createElement("h2");
+    title.textContent = "Top 5";
+    elMuro.appendChild(title);
+
+    // Mostrar equipos
+    top5.forEach(item => {
+
+        const team = teamsMap.get(item.team_id);
+
+        // Buscar próximo partido (actualmente no hay partidos disponibles)
+        const nextGame = stateG.games
+            .filter(game =>
+                game.finished === false &&
+                (
+                    Number(game.home_team_id) === item.team_id ||
+                    Number(game.away_team_id) === item.team_id
+                )
+            )
+            .sort((a, b) =>
+                new Date(a.local_date) - new Date(b.local_date)
+            )[0];
+
+        let rival = "Sin partido programado";
+        let fecha = "";
+
+        if (nextGame) {
+
+            const rivalId =
+                Number(nextGame.home_team_id) === item.team_id
+                    ? Number(nextGame.away_team_id)
+                    : Number(nextGame.home_team_id);
+
+            const rivalTeam = teamsMap.get(rivalId);
+
+            rival = rivalTeam?.name_en ?? "Desconocido";
+            fecha = nextGame.local_date;
+        }
+
+        const card = document.createElement("article");
+        card.classList.add("card");
+
+        card.innerHTML = `
+            <h3 class="card-title">
+                <img src="${team?.flag}" width="35">
+                ${team?.name_en}
+            </h3>
+
+            <p><strong>Goles en contra:</strong> ${item.ga}</p>
+
+            <p>
+                <strong>Próximo partido:</strong>
+                ${rival}
+            </p>
+
+            <p>
+                <strong>Fecha:</strong>
+                ${fecha || "No disponible"}
+            </p>
+        `;
+
+        elMuro.appendChild(card);
+
+    });
+
 }
+btnelmuro.addEventListener("click", elmuro);

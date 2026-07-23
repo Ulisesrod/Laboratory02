@@ -6,25 +6,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FIFA World Cup 2026</title>
     <script src="app.js" defer></script>
+    <link rel="stylesheet" href="./style.css">
 
 </head>
 
 <body>
-    <section class="selector-panel" aria-label="Selección de equipo">
+    <section id="partidos_jugados" aria-label="Selección de equipo">
         <div class="selector-group">
             <label for="teamSelect">Selecciona un equipo</label>
             <select id="teamSelect" disabled aria-live="polite">
                 <option value="">— Cargando equipos…</option>
             </select>
-        </div>
-    </section>
-    <section class="section-container" aria-label="Seccion de partidos">
-        <h2 id="partidosJugados"> Partidos Jugados</h2>
-        <div class="card-wrapper">
-            <div id="juegos" class="card" aria-label="tarjeta de juego">
-                <h3 class="card-title">Partido</h3>
+            <h2 id="partidosJugados"> Partidos Jugados</h2>
+            <div class="card-wrapper">
+                <div id="juegos" class="card" aria-label="tarjeta de juego">
+                    <h3 class="card-title">Partido</h3>
+                </div>
             </div>
         </div>
+    </section>
+    <section id="goleadas">
+        <h2>Goleadas del campeonato</h2>
+        <button id="btnGoleadas" type="button"> Mostrar goleadas </button>
+
+    </section>
+    <section id="elmuro">
+        <h2>El muro</h2>
+        <button id="btnelmuro" type="button"> Mostrar el muro </button>
+
     </section>
 
 </body>

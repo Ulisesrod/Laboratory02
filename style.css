@@ -1,0 +1,304 @@
+/* =====================================================
+   FIFA WORLD CUP 2026 THEME
+===================================================== */
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    font-family:Arial, Helvetica, sans-serif;
+    background:linear-gradient(135deg,#003B73,#0057B8,#007A33);
+    min-height:100vh;
+    color:#222;
+    padding:30px;
+}
+
+/*=====================================================
+    SECCIONES
+=====================================================*/
+
+section{
+    background:white;
+    border-radius:15px;
+    margin:25px auto;
+    padding:25px;
+    max-width:1200px;
+    box-shadow:0 8px 20px rgba(0,0,0,.25);
+}
+
+section h2{
+    color:#B71C1C;
+    border-left:8px solid #F4C542;
+    padding-left:12px;
+    margin-bottom:20px;
+    font-size:1.8rem;
+}
+
+/*=====================================================
+    SELECTOR
+=====================================================*/
+
+.selector-group{
+    display:flex;
+    flex-direction:column;
+    gap:15px;
+}
+
+label{
+    font-weight:bold;
+    color:#003B73;
+    font-size:1.1rem;
+}
+
+select{
+    padding:12px;
+    border-radius:10px;
+    border:2px solid #0057B8;
+    font-size:1rem;
+    background:#F7F9FC;
+    transition:.3s;
+}
+
+select:hover{
+    border-color:#007A33;
+}
+
+select:focus{
+    outline:none;
+    border-color:#F4C542;
+    box-shadow:0 0 8px rgba(244,197,66,.7);
+}
+
+/*=====================================================
+    BOTONES
+=====================================================*/
+
+button{
+
+    background:#C62828;
+    color:white;
+    border:none;
+    padding:12px 24px;
+    border-radius:10px;
+    cursor:pointer;
+    font-size:1rem;
+    font-weight:bold;
+    transition:.3s;
+
+}
+
+button:hover{
+
+    background:#F4C542;
+    color:#222;
+    transform:scale(1.05);
+
+}
+
+button:active{
+
+    transform:scale(.97);
+
+}
+
+/*=====================================================
+    TARJETAS
+=====================================================*/
+
+.card-wrapper{
+
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+    gap:20px;
+    margin-top:20px;
+
+}
+
+.card{
+
+
+    background:white;
+    border-left:8px solid #0057B8;
+    border-radius:15px;
+    padding:20px;
+    box-shadow:0 5px 15px rgba(0,0,0,.15);
+    transition:.3s;
+
+}
+
+.card:hover{
+
+    transform:translateY(-6px);
+    box-shadow:0 10px 25px rgba(0,0,0,.25);
+
+}
+
+.card-title{
+
+    color:#B71C1C;
+    margin-bottom:15px;
+
+    display:flex;
+    align-items:center;
+    gap:12px;
+    flex-wrap:wrap;
+
+}
+
+.card img{
+
+    width:40px;
+    height:28px;
+    object-fit:cover;
+    border-radius:4px;
+    border:1px solid #CCC;
+
+}
+
+.card p{
+
+    margin:8px 0;
+    line-height:1.5;
+
+}
+
+.card strong{
+
+    color:#003B73;
+
+}
+
+/*=====================================================
+    TITULOS DINAMICOS
+=====================================================*/
+
+#juegos h2{
+
+    margin-bottom:20px;
+    color:#007A33;
+    text-align:center;
+
+}
+
+/*=====================================================
+    GOLEADAS Y MURO
+=====================================================*/
+
+#goleadas,
+#elmuro{
+
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:15px;
+
+}
+
+/*=====================================================
+    BANNERS (CACHE Y RETRY)
+=====================================================*/
+
+#offlineBanner{
+
+    background:#F4C542 !important;
+    color:#222 !important;
+    border-radius:8px;
+    margin-bottom:20px;
+    box-shadow:0 5px 10px rgba(0,0,0,.2);
+
+}
+
+#retryCountdown{
+
+    background:#C62828 !important;
+    color:white !important;
+    border-radius:8px;
+    margin-bottom:20px;
+    box-shadow:0 5px 10px rgba(0,0,0,.2);
+
+}
+
+/*=====================================================
+    RESPONSIVE
+=====================================================*/
+
+@media(max-width:768px){
+
+    body{
+
+        padding:15px;
+
+    }
+
+    section{
+
+        padding:18px;
+
+    }
+
+    .card-wrapper{
+
+        grid-template-columns:1fr;
+
+    }
+
+    #goleadas,
+    #elmuro{
+
+        flex-direction:column;
+        align-items:flex-start;
+
+    }
+
+    button{
+
+        width:100%;
+
+    }
+
+}
+
+/*=====================================================
+    EFECTOS VISUALES
+=====================================================*/
+
+.card::before{
+
+    content:"🏆";
+    font-size:1.2rem;
+    float:right;
+
+}
+
+.card:hover::before{
+
+    transform:rotate(20deg);
+
+}
+
+/*=====================================================
+    SCROLL
+=====================================================*/
+
+::-webkit-scrollbar{
+
+    width:10px;
+
+}
+
+::-webkit-scrollbar-thumb{
+
+    background:#0057B8;
+    border-radius:10px;
+
+}
+
+::-webkit-scrollbar-track{
+
+    background:#EEE;
+
+}
